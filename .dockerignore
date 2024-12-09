@@ -1,0 +1,11 @@
+.idea
+.git
+deploy
+.dockerignore
+.env
+.gitignore
+.pylintrc
+config.yml
+Dockerfile
+Makefile
+__pycache__

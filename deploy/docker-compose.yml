@@ -1,0 +1,53 @@
+name: "exchange-api-test-task"
+services:
+  api:
+    image: smbrine/exchange-api-test-task:v1
+    environment:
+      REDIS_ENDPOINT: ${REDIS_BASE_ENDPOINT}/0
+      BIND_HOST: "0.0.0.0"
+#   Config can be bound to make changes in runtime
+    volumes:
+      - type: bind
+        source: "./config.yml"
+        target: "/app/config.yml"
+#    Or sat on start to avoid placing files around docker-compose.yml
+#    configs:
+#      - source: api-config
+#        target: /app/config.yml
+    ports:
+      - "8000:8000"
+  redis:
+    image: redis:7.4-alpine
+    command: >
+      redis-server 
+      --requirepass ${REDIS_PASSWORD} 
+      --appendonly yes
+      --databases 32
+#      --appendfsync everysec # Persistence
+#      --auto-aof-rewrite-percentage 100 # Persistence
+#      --auto-aof-rewrite-min-size 64mb # Persistence
+    environment:
+      REDIS_PORT: 6379
+      REDIS_REPLICATION_MODE: master
+#    volumes: # Persistence
+#      - "${DATABASE_PATH}/redis:/data" # Persistence
+    restart: always
+    ports:
+      - "6379:6379"
+  redis-ui:
+    image: rediscommander/redis-commander:latest
+    restart: always
+    depends_on:
+      - redis
+    command: >
+      /redis-commander/docker/entrypoint.sh 
+      --http-auth-username=${REDIS_UI_USERNAME} 
+      --http-auth-password=${REDIS_UI_PASSWORD}
+    environment:
+      REDIS_HOSTS: cache:redis:6379:0:${REDIS_PASSWORD}
+    ports:
+      - "9991:8081"
+configs:
+  api-config:
+    content: |
+      cache: true
